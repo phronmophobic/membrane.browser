@@ -1,8 +1,6 @@
 (ns com.phronemophobic.membrane.browser
   (:require [membrane.ui :as ui]
-            [membrane.skia :as skia
-             :refer [glfw-call]
-             ]
+            [membrane.skia :as skia]
             [com.phronemophobic.membrane.browser.impl :as impl]
             [com.rpl.specter :as spec]
             [clojure.java.io :as io]
@@ -35,6 +33,14 @@
 
 (gen2/import-cef-classes)
 
+(def glfw @#'skia/glfw)
+
+(defmacro glfw-call [ret fn-name & args]
+  `(.invoke ^com.sun.jna.Function
+            (.getFunction ^com.sun.jna.NativeLibrary glfw ~(name fn-name))
+            ~ret
+            (to-array (vector ~@args))))
+
 (def post-empty-event @#'skia/glfw-post-empty-event)
 
 (def ^:no-doc main-class-loader @clojure.lang.Compiler/LOADER)
@@ -43,28 +49,30 @@
 (defn ^:private long->pointer [n]
   (tech.v3.datatype.ffi.Pointer. n))
 
-(skia/defc skia_bgra8888_draw skia/membraneskialib Void/TYPE [skia-resource buffer width height row-bytes])
+(def skialib @#'skia/membraneskialib)
+
+(skia/defc skia_bgra8888_draw skialib Void/TYPE [skia-resource buffer width height row-bytes])
 (defn skia-bgra8888-draw [resource buffer width height row-bytes]
   (skia_bgra8888_draw resource buffer (int width) (int height) (int row-bytes)))
 
-(skia/defc skia_direct_bgra8888_buffer skia/membraneskialib Pointer [buf width height row-bytes])
+(skia/defc skia_direct_bgra8888_buffer skialib Pointer [buf width height row-bytes])
 (defn skia-direct-bgra8888-buffer [buf width height row-bytes]
   (skia_direct_bgra8888_buffer buf (int width) (int height) (int row-bytes)))
 
-(skia/defc skia_cleanup skia/membraneskialib Void/TYPE [skia-resource])
+(skia/defc skia_cleanup skialib Void/TYPE [skia-resource])
 
-(skia/defc skia_draw_surface skia/membraneskialib Void/TYPE [destination source])
+(skia/defc skia_draw_surface skialib Void/TYPE [destination source])
 
 
-(skia/defc skia_browser_buffer skia/membraneskialib Pointer [width height])
+(skia/defc skia_browser_buffer skialib Pointer [width height])
 (defn skia-browser-buffer [width height]
   (skia_browser_buffer (int width) (int height)))
 
-(skia/defc skia_browser_update skia/membraneskialib Void/TYPE [skia-resource dirty-rects-count dirty-rects buffer width height])
+(skia/defc skia_browser_update skialib Void/TYPE [skia-resource dirty-rects-count dirty-rects buffer width height])
 (defn skia-browser-update [resource dirty-rects-count dirty-rects buffer width height]
   (skia_browser_update resource (int dirty-rects-count) dirty-rects buffer (int width) (int height)))
 
-(skia/defc skia_browser_draw skia/membraneskialib Void/TYPE [skia-resource buffer width height])
+(skia/defc skia_browser_draw skialib Void/TYPE [skia-resource buffer width height])
 (defn skia-browser-draw [resource buffer width height]
   (skia_browser_draw resource buffer (int width) (int height)))
 

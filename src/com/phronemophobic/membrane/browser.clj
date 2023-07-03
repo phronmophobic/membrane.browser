@@ -169,14 +169,17 @@
       (let [c (if (keyword? k)
                 (if (= k :enter)
                   \return
-                  (char (get skia/keycodes k)))
+                  nil
+                  ;;(char (get skia/keycodes k))
+                  )
                 (.charAt k 0))]
-        (.sendKeyEvent (.getHost browser)
-                       (cef/map->key-event
-                        {:type 3
-                         :modifiers 0
-                         :character c
-                         :unmodified-character c})))))
+        (when c
+          (.sendKeyEvent (.getHost browser)
+                         (cef/map->key-event
+                          {:type 3
+                           :modifiers 0
+                           :character c
+                           :unmodified-character c}))))))
 
   ui/IHasKeyEvent
   (has-key-event [this]

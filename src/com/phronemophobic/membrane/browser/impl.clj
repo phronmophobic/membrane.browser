@@ -158,6 +158,18 @@
             
             #_(cef/cef-quit-message-loop))})
 
+        render-handler
+        (cef/map->render-handler
+         {:get-view-rect
+          (fn [handler browser rect]
+            (let [{:keys [width height]} (get @browsers  (.getIdentifier browser))]
+              (set! (.width rect) width)
+              (set! (.height rect) height)))
+          :on-paint
+          (fn [handler browser paint-type nrects rects buffer width height]
+            (when on-paint
+              (on-paint browser paint-type nrects rects buffer width height)))})
+
         client
         (cef/map->client
          {:get-life-span-handler
@@ -165,16 +177,7 @@
             life-span-handler)
           :get-render-handler
           (fn [client]
-            (cef/map->render-handler
-             {:get-view-rect
-              (fn [handler browser rect]
-                (let [{:keys [width height]} (get @browsers  (.getIdentifier browser))]
-                  (set! (.width rect) width)
-                  (set! (.height rect) height)))
-              :on-paint
-              (fn [handler browser paint-type nrects rects buffer width height]
-                (when on-paint
-                  (on-paint browser paint-type nrects rects buffer width height)))}))})
+            render-handler)})
 
         window-info (cef/map->window-info
                      {:windowless-rendering-enabled 1})]

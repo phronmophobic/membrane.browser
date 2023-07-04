@@ -56,7 +56,7 @@
                  (async/sliding-buffer 1)))
 
 (defn ^:private default-timeout []
-  (async/timeout 1000))
+  (async/timeout 30))
 
 
 (defn start-debounce-thread [dispatch-main]
@@ -270,7 +270,7 @@ cef/map->browser-host
                      (async/sliding-buffer 1)))
 
   (defn default-timeout []
-    (async/timeout 1000))
+    (async/timeout 30))
 
   (async/thread
     (try

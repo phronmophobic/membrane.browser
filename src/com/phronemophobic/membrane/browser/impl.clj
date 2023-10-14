@@ -133,6 +133,7 @@
    {:keys [on-after-created
            on-before-close
            on-paint
+           device-scale-factor
            remote-debugging-port]
     :as opts}]
 
@@ -163,15 +164,22 @@
 
         render-handler
         (cef/map->render-handler
-         {:get-view-rect
-          (fn [handler browser rect]
-            (let [{:keys [width height]} (get @browsers  (.getIdentifier browser))]
-              (set! (.width rect) width)
-              (set! (.height rect) height)))
-          :on-paint
-          (fn [handler browser paint-type nrects rects buffer width height]
-            (when on-paint
-              (on-paint browser paint-type nrects rects buffer width height)))})
+         (merge
+          {:get-view-rect
+           (fn [handler browser rect]
+             (let [{:keys [width height]} (get @browsers  (.getIdentifier browser))]
+               (set! (.width rect) width)
+               (set! (.height rect) height)))
+           :on-paint
+           (fn [handler browser paint-type nrects rects buffer width height]
+             (when on-paint
+               (on-paint browser paint-type nrects rects buffer width height)))}
+          (when device-scale-factor
+            {:get-screen-info
+             (fn [handler browser screen-info]
+               (set! (.device_scale_factor screen-info) device-scale-factor)
+               ;; we modified screen-info (see docs)
+               (int 1))})))
 
         client
         (cef/map->client

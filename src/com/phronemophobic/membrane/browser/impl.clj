@@ -82,7 +82,8 @@
 
 
 (defn initialize [dispatch-main
-                  {:keys [remote-debugging-port]}]
+                  {:keys [remote-debugging-port
+                          cache-path]}]
   (let [[old _] (reset-vals! initialized? true)]
     (if old
       ;; already initialized, just drain queue
@@ -116,6 +117,8 @@
                                :locales-dir-path (.getAbsolutePath (io/file target-dir "locales"))
                                :windowless-rendering-enabled 1
                                :external-message-pump 1}
+                              (when cache-path
+                                {:cache-path (.getCanonicalPath (io/as-file cache-path))})
                               (when remote-debugging-port
                                 {:remote-debugging-port remote-debugging-port})))
                             app

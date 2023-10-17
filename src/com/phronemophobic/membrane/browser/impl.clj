@@ -133,7 +133,7 @@
    {:keys [on-after-created
            on-before-close
            on-paint
-           device-scale-factor
+           on-paint+content-scale
            remote-debugging-port]
     :as opts}]
 
@@ -141,12 +141,14 @@
 
   (let [browser-settings (cef/map->browser-settings)
 
+        last-content-scale (volatile! nil)
         life-span-handler
         (cef/map->life-span-handler
          {:on-after-created
           (fn [this browser]
             (swap! browsers assoc (.getIdentifier browser)
                    {:browser browser
+                    :content-scale 1
                     :width initial-width
                     :height initial-height})
             (when on-after-created
@@ -158,9 +160,7 @@
               (when on-before-close
                 (on-before-close browser))
               (finally
-                (swap! browsers dissoc (.getIdentifier browser))))
-            
-            #_(cef/cef-quit-message-loop))})
+                (swap! browsers dissoc (.getIdentifier browser)))))})
 
         render-handler
         (cef/map->render-handler
@@ -172,15 +172,17 @@
                (set! (.height rect) height)))
            :on-paint
            (fn [handler browser paint-type nrects rects buffer width height]
+             (when on-paint+content-scale
+               (on-paint+content-scale browser @last-content-scale paint-type nrects rects buffer width height))
              (when on-paint
                (on-paint browser paint-type nrects rects buffer width height)))}
-          (when device-scale-factor
-            {:get-screen-info
-             (fn [handler browser screen-info]
-               (set! (.device_scale_factor screen-info) device-scale-factor)
-               ;; we modified screen-info (see docs)
-               (int 1))})))
-
+          {:get-screen-info
+           (fn [handler browser screen-info]
+             (let [{:keys [content-scale]} (get @browsers  (.getIdentifier browser))]
+               (set! (.device_scale_factor screen-info) content-scale)
+               (vreset! last-content-scale content-scale))
+             ;; we modified screen-info (see docs)
+             (int 1))}))
         client
         (cef/map->client
          {:get-life-span-handler
@@ -216,14 +218,19 @@
   Errors are ignored if `browser` is no longer valid.
   
   Returns nil."
-  [browser [w h]]
-  (let [bid (.getIdentifier browser)]
-    (swap! browsers update bid
-           assoc
-           :width w
-           :height h)
-    (.wasResized (.getHost browser)))
-  nil)
+  ([browser [w h]]
+   (resize browser [w h] 1))
+  ([browser [w h] content-scale]
+   (let [bid (.getIdentifier browser)
+         browser-host (.getHost browser)]
+     (swap! browsers update bid
+            assoc
+            :content-scale content-scale
+            :width w
+            :height h)
+     (.notifyScreenInfoChanged browser-host)
+     (.wasResized browser-host))
+   nil))
 
 
 (defn goto

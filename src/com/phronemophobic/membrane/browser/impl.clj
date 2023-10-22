@@ -276,9 +276,9 @@ cef/map->browser-host
   [[initial-width initial-height :as initial-size]
    url
    dispatch-main
-   {:keys [:on-after-created
-           :on-before-close
-           :on-paint]
+   {:keys [on-after-created
+           on-before-close
+           on-paint]
     :as opts}]
 
   (start-browser initial-size

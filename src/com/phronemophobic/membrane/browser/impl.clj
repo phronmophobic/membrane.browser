@@ -83,6 +83,7 @@
 
 (defn initialize [dispatch-main
                   {:keys [remote-debugging-port
+                          cef-path
                           cache-path]}]
   (let [[old _] (reset-vals! initialized? true)]
     (if old
@@ -105,7 +106,8 @@
                 browser-process-handler)})
 
 
-            target-dir cef/default-target-dir]
+            target-dir (or cef-path
+                           cef/default-target-dir)]
         (start-debounce-thread dispatch-main)
 
         (cef/cef-initialize (cef/map->main-args)
@@ -134,10 +136,13 @@
            on-before-close
            on-paint
            on-paint+content-scale
-           remote-debugging-port]
+           remote-debugging-port
+           cef-path]
     :as opts}]
 
-  (cef/prepare-environment!)
+  (cef/prepare-environment!
+   (or cef-path
+       cef/default-target-dir))
 
   (let [browser-settings (cef/map->browser-settings)
 
